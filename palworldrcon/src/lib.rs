@@ -2,7 +2,7 @@
 //!
 //! # Example:
 //! ```
-//! use palworld_rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
+//! use palworldrcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -55,7 +55,7 @@ impl PalworldRCON {
     ///
     /// # Example:
     /// ```
-    /// use palworld_rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
+    /// use palworldrcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -121,7 +121,7 @@ impl PalworldRCON {
     ///
     /// # Example:
     /// ```
-    /// use palworld_rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
+    /// use palworldrcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
     ///
     /// #[tokio::main]
     /// async fn main() {
