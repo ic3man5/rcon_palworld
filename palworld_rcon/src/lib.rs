@@ -1,9 +1,9 @@
 //! API to interact with a Palworld server via RCON.
-//! 
+//!
 //! # Example:
 //! ```
 //! use palworld_rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
-//! 
+//!
 //! #[tokio::main]
 //! async fn main() {
 //!     // Create a new rcon connection.
@@ -47,8 +47,6 @@ pub struct PalworldRCON {
     pub password: String,
 }
 
-
-
 impl PalworldRCON {
     /// Create a new [PalworldRCON] instance.
     ///
@@ -60,11 +58,11 @@ impl PalworldRCON {
     /// async fn main() {
     ///     let port = DEFAULT_SOURCE_PORT;
     ///     let rcon = PalworldRCON::new("localhost", Some(port), "MyRCONPassword");
-    ///     assert_eq!(rcon, 
-    ///         PalworldRCON { 
-    ///             host: "localhost".to_string(), 
-    ///             port: port, 
-    ///             password: "MyRCONPassword".to_string() 
+    ///     assert_eq!(rcon,
+    ///         PalworldRCON {
+    ///             host: "localhost".to_string(),
+    ///             port: port,
+    ///             password: "MyRCONPassword".to_string()
     ///     });
     /// }
     /// ```
@@ -100,7 +98,7 @@ impl PalworldRCON {
     }
 
     /// Sends a broadcast command to the server via RCON. Returns a string of the command result.
-    /// 
+    ///
     /// # Arguments:
     /// * `message` - The message to broadcast to the server
     /// * `replace_string` - Replace spaces with underscores, as of v0.1.3 server this is needed.
@@ -120,11 +118,11 @@ impl PalworldRCON {
     }
 
     /// Gets active player information. Returns a vector of [PlayerInfo].
-    /// 
+    ///
     /// # Example:
     /// ```
     /// use palworld_rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
-    /// 
+    ///
     /// #[tokio::main]
     /// async fn main() {
     /// // Create a new rcon connection.
@@ -170,10 +168,23 @@ impl PalworldRCON {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dotenv::dotenv;
+
+    fn get_server() -> PalworldRCON {
+        dotenv().unwrap();
+        let hostname = std::env::var("HOSTNAME").expect("HOSTNAME env variable");
+        let port = std::env::var("RCON_PORT")
+            .expect("RCON_PORT env variable")
+            .parse()
+            .expect("Failed to convert RCON_PORT to u16");
+        let password = std::env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD env variable");
+
+        PalworldRCON::new(hostname, Some(port), password)
+    }
 
     #[tokio::test]
-    async fn test_commands() {
-        let server = PalworldRCON::new("localhost", Some(DEFAULT_SOURCE_PORT), "MyRCONPassword");
+    async fn test_commands_overload() {
+        let server = get_server();
         for i in 0..100 {
             println!("{i} {}", server.send_command("info").await.unwrap());
         }
@@ -181,13 +192,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_save() {
-        let server = PalworldRCON::new("localhost", Some(DEFAULT_SOURCE_PORT), "MyRCONPassword");
+        let server = get_server();
         println!("{:#?}", server.save().await.unwrap());
     }
 
     #[tokio::test]
     async fn test_get_player_info() {
-        let server = PalworldRCON::new("localhost", Some(DEFAULT_SOURCE_PORT), "MyRCONPassword");
+        let server = get_server();
         let players = server.get_player_info().await.unwrap();
         println!("Player count: {}", players.len());
         println!(
@@ -209,8 +220,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_commands_asdf() {
-        let server = PalworldRCON::new("localhost", Some(DEFAULT_SOURCE_PORT), "MyRCONPassword");
+    async fn test_commands_memory_broadcast() {
+        let server = get_server();
 
         let mem = psutil::memory::virtual_memory().unwrap();
         println!(

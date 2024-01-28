@@ -3,11 +3,11 @@ version: '3.8'
 services:
   palworld:
     image: kagurazakanyaa/palworld
-    environment:
-      - IS_PUBLIC=false
-      - ADMIN_PASSWORD=MyRCONPassword
-      - RCON_ENABLED=true
+    env_file:
+      - .env
     ports:
-      - "25575:25575"
+      - "${GAME_PORT}:${GAME_PORT}"
+      - "${RCON_PORT}:${RCON_PORT}"
+    restart: unless-stopped
     #volumes:
     #  -palworld_data:/opt/palworld/Pal/Saved
