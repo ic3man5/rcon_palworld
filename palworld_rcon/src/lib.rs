@@ -18,8 +18,11 @@
 //! }
 //! ```
 
+use std::time::Duration;
+
 use anyhow::Result;
 use rcon;
+use regex::Regex;
 use tokio;
 
 /// Default Source Engine port, Palworld uses the same port also.
@@ -80,13 +83,10 @@ impl PalworldRCON {
     /// Connect to the server.
     async fn connect(&self) -> Result<rcon::Connection<tokio::net::TcpStream>> {
         let host = format!("{}:{}", self.host, self.port);
-        println!("Connecting...");
         let connection = <rcon::Connection<tokio::net::TcpStream>>::builder()
             .enable_factorio_quirks(true)
             .connect(host.as_str(), self.password.as_str())
             .await?;
-        println!("connected!");
-
         Ok(connection)
     }
 
@@ -163,6 +163,36 @@ impl PalworldRCON {
         let msg = self.send_command("save").await?;
         Ok(msg.contains("Complete Save"))
     }
+
+    /// Sends a save command to the server via RCON. Returns true if server successfully saved.
+    pub async fn shutdown(&self, delay: Option<Duration>, msg: impl Into<String>) -> Result<bool> {
+        let cmd = format!(
+            "shutdown {} {}",
+            delay.unwrap_or(Duration::new(30, 0)).as_secs(),
+            msg.into()
+        );
+        let msg = self.send_command(cmd.as_str()).await?;
+        println!("shutdown msg: {}", msg);
+        Ok(msg.contains("The server will shut down in"))
+    }
+
+    pub async fn get_version(&self) -> Result<String> {
+        // Welcome to Pal Server[v0.1.3.0] Default Palworld Server
+        let result = self.send_command("info").await?;
+        let re = Regex::new(r"\[v[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}\]")?;
+        if !re.is_match(&result) {
+            anyhow::bail!("Failed to find version in info RCON command")
+        }
+        let version = re
+            .find(result.as_str())
+            .expect("Failed to find version information")
+            .as_str();
+        
+        // remove the brackets at the front and end
+        let version = Regex::new(r"(\[)|(\])").unwrap().replace_all(version, "");
+
+        Ok(version.to_string())
+    }
 }
 
 #[cfg(test)]
@@ -193,7 +223,13 @@ mod tests {
     #[tokio::test]
     async fn test_save() {
         let server = get_server();
-        println!("{:#?}", server.save().await.unwrap());
+        assert!(server.save().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_shutdown() {
+        let server = get_server();
+        assert!(server.shutdown(None, "MESSAGE_HERE").await.unwrap());
     }
 
     #[tokio::test]
@@ -259,5 +295,13 @@ mod tests {
                 .unwrap()
         );
         println!("{}", server.send_command("info").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_get_version() {
+        let server = get_server();
+        let version = server.get_version().await.unwrap();
+        assert!(version.contains("v0"));
+        println!("{version}");
     }
 }
