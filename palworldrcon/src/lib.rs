@@ -7,7 +7,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     // Create a new rcon connection.
-//!     let rcon = PalworldRCON::new("localhost", Some(DEFAULT_SOURCE_PORT), "MyRCONPassword");
+//!     let rcon = PalworldRCON::new("localhost", DEFAULT_SOURCE_PORT, "MyRCONPassword");
 //!     // Get players logged in.
 //!     let players = rcon.get_player_info().await.unwrap();
 //!     // Print out all the active players.
@@ -24,12 +24,13 @@ use anyhow::Result;
 use rcon;
 use regex::Regex;
 use tokio;
+use serde::{Deserialize, Serialize};
 
 /// Default Source Engine port, Palworld uses the same port also.
 pub static DEFAULT_SOURCE_PORT: u16 = 25575;
 
 /// Representation of /showplayers rcon command
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PlayerInfo {
     /// Player's name.
     pub name: String,
@@ -60,7 +61,7 @@ impl PalworldRCON {
     /// #[tokio::main]
     /// async fn main() {
     ///     let port = DEFAULT_SOURCE_PORT;
-    ///     let rcon = PalworldRCON::new("localhost", Some(port), "MyRCONPassword");
+    ///     let rcon = PalworldRCON::new("localhost", port, "MyRCONPassword");
     ///     assert_eq!(rcon,
     ///         PalworldRCON {
     ///             host: "localhost".to_string(),
@@ -69,13 +70,10 @@ impl PalworldRCON {
     ///     });
     /// }
     /// ```
-    pub fn new(host: impl Into<String>, port: Option<u16>, password: impl Into<String>) -> Self {
+    pub fn new(host: impl Into<String>, port: u16, password: impl Into<String>) -> Self {
         Self {
             host: host.into(),
-            port: match &port {
-                Some(p) => p.to_owned(),
-                None => DEFAULT_SOURCE_PORT,
-            },
+            port: port,
             password: password.into(),
         }
     }
@@ -126,7 +124,7 @@ impl PalworldRCON {
     /// #[tokio::main]
     /// async fn main() {
     /// // Create a new rcon connection.
-    ///     let rcon = PalworldRCON::new("localhost", Some(DEFAULT_SOURCE_PORT), "MyRCONPassword");
+    ///     let rcon = PalworldRCON::new("localhost", DEFAULT_SOURCE_PORT, "MyRCONPassword");
     ///     // Get players logged in.
     ///     let players = rcon.get_player_info().await.unwrap();
     ///     // Print out all the active players.
@@ -209,7 +207,7 @@ mod tests {
             .expect("Failed to convert RCON_PORT to u16");
         let password = std::env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD env variable");
 
-        PalworldRCON::new(hostname, Some(port), password)
+        PalworldRCON::new(hostname, port, password)
     }
 
     #[tokio::test]

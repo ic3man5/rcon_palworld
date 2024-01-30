@@ -7,34 +7,34 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'rcon_palworld'",
+            "name": "Debug executable 'palworldcli'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=rcon_palworld",
-                    "--package=rcon_palworld"
+                    "--bin=palworldcli",
+                    "--package=palworldcli"
                 ],
                 "filter": {
-                    "name": "rcon_palworld",
+                    "name": "palworldcli",
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["localhost", "-pMyRCONPassword", "-j", "-v"],
             "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rcon_palworld'",
+            "name": "Debug unit tests in executable 'palworldcli'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=rcon_palworld",
-                    "--package=rcon_palworld"
+                    "--bin=palworldcli",
+                    "--package=palworldcli"
                 ],
                 "filter": {
-                    "name": "rcon_palworld",
+                    "name": "palworldcli",
                     "kind": "bin"
                 }
             },
