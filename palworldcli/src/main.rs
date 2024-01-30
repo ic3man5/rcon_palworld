@@ -29,6 +29,26 @@ struct Args {
     /// Get server version
     #[arg(short = 'v', long = "server_version")]
     server_version: bool,
+
+    /// Tell the server to save
+    #[arg(short, long)]
+    save: bool,
+
+    /// Tell the server to shutdown with a delay in seconds
+    #[arg(short, long, value_name = "30")]
+    shutdown: Option<u64>,
+
+    /// Broadcast a message to the server
+    #[arg(short, long)]
+    broadcast: Option<String>,
+
+    /// Broadcast space replacement String.
+    #[arg(short, long)]
+    replace_broadcast_space: Option<String>,
+
+    /// Send a command to the server, result is sent to stdout.
+    #[arg(short, long)]
+    command: Option<String>,
 }
 
 #[tokio::main]
@@ -56,7 +76,8 @@ async fn main() -> Result<()> {
                 println!("{}\t{}\t{}", player.name, player.uid, player.steamid);
             }
         }
-    } 
+    }
+    // Server version
     if args.server_version {
         let mut version = server.get_version().await?;
         if args.json {
@@ -64,6 +85,33 @@ async fn main() -> Result<()> {
         }
         println!("{}", version);
     }
-    
+    // save the server
+    if args.save {
+        println!("Saved: {}", server.save().await?);
+    }
+    // Shutdown the server
+    match args.shutdown {
+        Some(delay) => {
+            let success = server.shutdown(Some(std::time::Duration::from_secs(delay)), "").await?;
+            println!("Shutdown: {success}");
+        },
+        None => {},
+    }
+    // Broadcast message
+    match args.broadcast {
+        Some(msg) => {
+            let result = server.broadcast(msg, args.replace_broadcast_space).await?;
+            println!("{result}");
+        },
+        None => {}
+    }
+    // Send a command
+    match args.command {
+        Some(cmd) => {
+            let result = server.send_command(cmd.as_str()).await?;
+            println!("{result}");
+        },
+        None => {}
+    }
     Ok(())
 }

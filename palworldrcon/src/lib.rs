@@ -99,17 +99,34 @@ impl PalworldRCON {
     ///
     /// # Arguments:
     /// * `message` - The message to broadcast to the server
-    /// * `replace_string` - Replace spaces with underscores, as of v0.1.3 server this is needed.
+    /// * `replace_string` - Replace spaces with a String, as of v0.1.3 server this is needed.
+    /// 
+    /// # Example:
+    /// ```
+    /// use palworldrcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let port = DEFAULT_SOURCE_PORT;
+    ///     let rcon = PalworldRCON::new("localhost", port, "MyRCONPassword");
+    ///     assert_eq!(
+    ///         rcon.broadcast(
+    ///             "Test Message",
+    ///             Some("_".to_string())
+    ///         ).await.unwrap(), 
+    ///             String::from("Broadcasted: Test_Message\n")
+    ///     );
+    /// }
+    /// ```
     pub async fn broadcast(
         &self,
         message: impl Into<String>,
-        replace_space: bool,
+        replace_space: Option<String>,
     ) -> Result<String> {
         let message: String = message.into();
-        let message = if replace_space {
-            message.replace(" ", "_")
-        } else {
-            message.into()
+        let message = match &replace_space {
+            Some(s) => message.replace(" ", s),
+            None => message,
         };
         let message = format!("broadcast {message}");
         self.send_command(message.as_str()).await
@@ -238,7 +255,7 @@ mod tests {
         println!(
             "{}",
             server
-                .broadcast(format!("DEBUG: Player Count: {}", players.len()), true)
+                .broadcast(format!("DEBUG: Player Count: {}", players.len()), Some("_".to_string()))
                 .await
                 .unwrap()
         );
@@ -246,7 +263,7 @@ mod tests {
             println!(
                 "{}",
                 server
-                    .broadcast(format!("DEBUG: {i}. {}", player.name), true)
+                    .broadcast(format!("DEBUG: {i}. {}", player.name), Some("_".to_string()))
                     .await
                     .unwrap()
             );
@@ -263,7 +280,7 @@ mod tests {
             server
                 .broadcast(
                     format!("DEBUG: memory free:  {}MiB", mem.free() / (1024 * 1024)),
-                    true
+                    Some("_".to_string())
                 )
                 .await
                 .unwrap()
@@ -277,7 +294,7 @@ mod tests {
                         mem.used() / (1024 * 1024),
                         mem.percent()
                     ),
-                    true
+                    Some("_".to_string())
                 )
                 .await
                 .unwrap()
@@ -287,7 +304,7 @@ mod tests {
             server
                 .broadcast(
                     format!("DEBUG: memory total: {}MiB", mem.total() / (1024 * 1024)),
-                    true
+                    Some("_".to_string())
                 )
                 .await
                 .unwrap()
