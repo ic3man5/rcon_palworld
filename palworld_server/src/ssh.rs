@@ -1,8 +1,9 @@
-use ssh2::Session;
-use tokio::net::TcpStream;
 use anyhow::Result;
-use tokio::task;
+use ssh2::Session;
 use std::io::Read;
+use tokio::net::TcpStream;
+use tokio::task;
+use crate::mem::MemInfo;
 
 #[derive(Debug)]
 pub struct PalworldConnection {
@@ -17,23 +18,13 @@ pub struct CommandResult {
     exit_status: i32,
 }
 
-#[derive(Debug, Default)]
-pub struct MemInfo {
-    mem_total: u64,
-    mem_free: u64,
-    mem_available: u64,
-    buffers: u64,
-    cached: u64,
-}
-
-impl MemInfo {
-    pub fn used(&self) -> Option<u64> {
-        self.mem_total.checked_sub(self.mem_available)
-    }
-}
 
 impl PalworldConnection {
-    pub fn new(hostname: impl Into<String>, username: impl Into<String>, password: impl Into<String>) -> Self {
+    pub fn new(
+        hostname: impl Into<String>,
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Self {
         Self {
             hostname: hostname.into(),
             username: username.into(),
@@ -66,13 +57,16 @@ impl PalworldConnection {
                 output: buffer,
                 exit_status,
             })
-        }).await??;
+        })
+        .await??;
         Ok(command_result)
     }
 
     pub async fn get_memory_info(&self) -> Result<MemInfo> {
         let bytes_regex = regex::Regex::new(r"[0-9]{1,99} kB$")?;
-        let result = self.command("cat /proc/meminfo | grep -e 'Mem' -e 'Cached' -e 'Buffers'").await?;
+        let result = self
+            .command("cat /proc/meminfo | grep -e 'Mem' -e 'Cached' -e 'Buffers'")
+            .await?;
         let mut mem_info = MemInfo::default();
         for line in result.output.split("\n") {
             if !bytes_regex.is_match(line) {
@@ -126,7 +120,9 @@ mod test {
     async fn test_command() -> Result<()> {
         let connection = get_connection();
 
-        let result = connection.command("cat /proc/meminfo | grep \"Mem\"").await?;
+        let result = connection
+            .command("cat /proc/meminfo | grep \"Mem\"")
+            .await?;
         assert_eq!(result.exit_status, 0);
         for line in result.output.split("\n") {
             println!("{line}");
@@ -139,8 +135,15 @@ mod test {
     async fn test_get_mem_info() -> Result<()> {
         let connection = get_connection();
         let mem_info = connection.get_memory_info().await?;
+        assert_ne!(mem_info, MemInfo::default());
+        /*
         println!("{mem_info:#?}");
-        println!("Used memory: {}", mem_info.used().unwrap().checked_div(1024).unwrap());
+        println!(
+            "Used memory: {}MiB {}%",
+            mem_info.used().unwrap().checked_div(1024).unwrap(),
+            mem_info.used_percent().unwrap()
+        );
         Ok(())
+        */
     }
 }

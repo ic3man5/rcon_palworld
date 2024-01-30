@@ -1,4 +1,4 @@
-use palworld_server::rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
+use palworld_server::{mem, rcon::{PalworldRCON, DEFAULT_SOURCE_PORT}, ssh};
 use clap::Parser;
 use anyhow::Result;
 use serde_json::json;
@@ -49,6 +49,19 @@ struct Args {
     /// Send a command to the server, result is sent to stdout.
     #[arg(short, long)]
     command: Option<String>,
+
+    /// Get memory usage of the server
+    #[arg(short, long)]
+    memory: bool,
+
+    /// Get memory usage of the server through SSH
+    #[arg(short = 'M', long = "memory_ssh")]
+    memory_ssh: bool,
+
+    /// Username to use with an SSH connection
+    #[arg(short, long)]
+    username: Option<String>,
+
 }
 
 #[tokio::main]
@@ -57,10 +70,10 @@ async fn main() -> Result<()> {
     // Setup server credentials
     let server_ip = args.server_ip.unwrap_or("localhost".to_string());
     let server_port = args.server_port.unwrap_or(DEFAULT_SOURCE_PORT);
-    //let hostname = format!("{server_ip}:{server_port}");
+    let ssh_hostname = format!("{server_ip}:{server_port}");
 
     // Connect to the server
-    let server = PalworldRCON::new(server_ip, server_port, args.password);
+    let server = PalworldRCON::new(server_ip, server_port, &args.password);
 
     // Player info
     if args.player_info {
@@ -112,6 +125,24 @@ async fn main() -> Result<()> {
             println!("{result}");
         },
         None => {}
+    }
+    // Get memory usage
+    if args.memory {
+        let mem_info = mem::MemInfo::get_memory_info()?;
+        if args.json {
+            println!("{}", serde_json::to_string(&mem_info)?);
+        } else {
+            println!("{mem_info:#?}");
+        }
+    } else if args.memory_ssh {
+        let username = args.username.or(Some("root".to_string())).unwrap();
+        let connection = ssh::PalworldConnection::new(ssh_hostname, username, &args.password);
+        let mem_info = connection.get_memory_info().await?;
+        if args.json {
+            println!("{}", serde_json::to_string(&mem_info)?);
+        } else {
+            println!("{mem_info:#?}");
+        }
     }
     Ok(())
 }
