@@ -1,4 +1,4 @@
-use palworldrcon::{self, DEFAULT_SOURCE_PORT};
+use palworld_server::rcon::{PalworldRCON, DEFAULT_SOURCE_PORT};
 use clap::Parser;
 use anyhow::Result;
 use serde_json::json;
@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
     //let hostname = format!("{server_ip}:{server_port}");
 
     // Connect to the server
-    let server = palworldrcon::PalworldRCON::new(server_ip, server_port, args.password);
+    let server = PalworldRCON::new(server_ip, server_port, args.password);
 
     // Player info
     if args.player_info {

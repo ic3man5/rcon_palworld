@@ -1,5 +1,5 @@
 [package]
-name = "palworldrcon"
+name = "palworld_server"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,6 +11,7 @@ psutil = "3.3.0"
 rcon = { version = "0.6.0", features=["rt-tokio"] }
 regex = "1.10.3"
 serde = { version = "1.0.196", features=["serde_derive"] }
+ssh2 = "0.9.4"
 tokio = { version = "1.35.1", features = ["full"] }
 
 [dev-dependencies]
