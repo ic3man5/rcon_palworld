@@ -7,11 +7,11 @@ use serde_json::json;
 #[command(author, version, about, long_about = None)] // Read from `Cargo.toml`
 struct Args {
     #[arg(value_name = "localhost")]
-    /// Host of the palworld server
+    /// Host of the palworld server, defaults to localhost if not specified
     server_ip: Option<String>,
 
     #[arg(short = 'P', long = "port", value_name = "25575")]
-    /// Port of the palworld server
+    /// Port of the palworld server, defaults to 25575 if not specified
     server_port: Option<u16>,
 
     /// Password of the palworld server
@@ -22,11 +22,11 @@ struct Args {
     #[arg(short, long)]
     json: bool,
 
-    /// Get Player info
-    #[arg(short = 'i', long = "info")]
+    /// Get player name, Unique ID, and SteamID
+    #[arg(short = 'l', long = "list")]
     player_info: bool,
 
-    /// Get Player info
+    /// Get server version
     #[arg(short = 'v', long = "server_version")]
     server_version: bool,
 }
@@ -56,7 +56,8 @@ async fn main() -> Result<()> {
                 println!("{}\t{}\t{}", player.name, player.uid, player.steamid);
             }
         }
-    } else if args.server_version {
+    } 
+    if args.server_version {
         let mut version = server.get_version().await?;
         if args.json {
             version = json!({"version": version}).to_string();            
