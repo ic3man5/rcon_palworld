@@ -230,6 +230,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fern"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9f0c14694cbd524c8720dd69b0e3179344f04ebb5f90f2e4a440c6ea3b2f1ee"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "gimli"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -309,6 +318,12 @@ dependencies = [
  "autocfg",
  "scopeguard",
 ]
+
+[[package]]
+name = "log"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
 name = "mach2"
@@ -399,6 +414,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dotenv",
+ "log",
  "psutil",
  "rcon",
  "regex",
@@ -413,6 +429,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "fern",
+ "log",
  "palworld_server",
  "serde_json",
  "tokio",

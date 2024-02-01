@@ -4,6 +4,7 @@ use std::io::Read;
 use tokio::net::TcpStream;
 use tokio::task;
 use crate::mem::MemInfo;
+use log::{error, info, warn};
 
 #[derive(Debug)]
 pub struct PalworldConnection {
@@ -33,10 +34,15 @@ impl PalworldConnection {
     }
 
     async fn connect(&self) -> Result<Session> {
+        log::debug!("Creating TcpStream...");
         let tcp_stream = TcpStream::connect(&self.hostname).await?;
+        log::debug!("Creating Session...");
         let mut session: Session = Session::new()?;
+        log::debug!("Setting TcpStream to session...");
         session.set_tcp_stream(tcp_stream);
+        log::debug!("Session handshake...");
         session.handshake()?;
+        log::debug!("Session user auth with password...");
         session.userauth_password(self.username.as_str(), self.password.as_str())?;
         Ok(session)
     }
@@ -136,7 +142,7 @@ mod test {
         let connection = get_connection();
         let mem_info = connection.get_memory_info().await?;
         assert_ne!(mem_info, MemInfo::default());
-        /*
+        
         println!("{mem_info:#?}");
         println!(
             "Used memory: {}MiB {}%",
@@ -144,6 +150,6 @@ mod test {
             mem_info.used_percent().unwrap()
         );
         Ok(())
-        */
+        
     }
 }

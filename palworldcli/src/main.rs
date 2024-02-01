@@ -14,7 +14,7 @@ struct Args {
     /// Port of the palworld server, defaults to 25575 if not specified
     server_port: Option<u16>,
 
-    /// Password of the palworld server
+    /// Password of the palworld server (RCON or SSH)
     #[arg(short = 'p', long)]
     password: String,
 
@@ -35,7 +35,7 @@ struct Args {
     save: bool,
 
     /// Tell the server to shutdown with a delay in seconds
-    #[arg(short, long, value_name = "30")]
+    #[arg(short = 'S', long, value_name = "30")]
     shutdown: Option<u64>,
 
     /// Broadcast a message to the server
