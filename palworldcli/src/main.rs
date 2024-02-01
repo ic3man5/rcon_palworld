@@ -18,7 +18,7 @@ struct Args {
     server_ip: Option<String>,
 
     #[arg(short = 'P', long = "port", value_name = "25575")]
-    /// Port of the palworld server, defaults to 25575 if not specified
+    /// Port of the palworld server, defaults to 25575 or 22 if not specified
     server_port: Option<u16>,
 
     /// Password of the palworld server (RCON or SSH)
@@ -145,20 +145,9 @@ async fn main() -> Result<()> {
             println!("{mem_info:#?}");
         }
     } else if args.memory_ssh {
+        // Dual purpose server_port here. We are going to grab it again and set to 22 (SSH default port now)
         let server_port = args.server_port.unwrap_or(22);
         let ssh_hostname = format!("{}:{server_port}", &server_ip);
-        // let connection = get_connection();
-        // let mem_info = connection.get_memory_info().await?;
-        // assert_ne!(mem_info, MemInfo::default());
-        
-        // println!("{mem_info:#?}");
-        // println!(
-        //     "Used memory: {}MiB {}%",
-        //     mem_info.used().unwrap().checked_div(1024).unwrap(),
-        //     mem_info.used_percent().unwrap()
-        // );
-        // Ok(())
-
         let username = args.username.or(Some("root".to_string())).unwrap();
         let connection = ssh::PalworldConnection::new(ssh_hostname, username, &args.password);
         let mem_info = connection.get_memory_info().await?;
