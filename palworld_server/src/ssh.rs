@@ -1,10 +1,10 @@
+use crate::mem::MemInfo;
 use anyhow::Result;
+use log::{error, info, warn};
 use ssh2::Session;
 use std::io::Read;
 use tokio::net::TcpStream;
 use tokio::task;
-use crate::mem::MemInfo;
-use log::{error, info, warn};
 
 #[derive(Debug)]
 pub struct PalworldConnection {
@@ -18,7 +18,6 @@ pub struct CommandResult {
     output: String,
     exit_status: i32,
 }
-
 
 impl PalworldConnection {
     pub fn new(
@@ -34,31 +33,35 @@ impl PalworldConnection {
     }
 
     async fn connect(&self) -> Result<Session> {
-        log::debug!("Creating TcpStream...");
+        log::trace!("Connecting to {}...", self.hostname);
         let tcp_stream = TcpStream::connect(&self.hostname).await?;
-        log::debug!("Creating Session...");
         let mut session: Session = Session::new()?;
-        log::debug!("Setting TcpStream to session...");
         session.set_tcp_stream(tcp_stream);
-        log::debug!("Session handshake...");
+        log::trace!("Session handshake...");
         session.handshake()?;
-        log::debug!("Session user auth with password...");
+        log::trace!("Session user auth with password...");
         session.userauth_password(self.username.as_str(), self.password.as_str())?;
+        log::trace!("Session userauth with password ok!");
         Ok(session)
     }
 
     pub async fn command(&self, cmd: impl Into<String>) -> Result<CommandResult> {
         let session = self.connect().await?;
+        log::trace!("Creating new channel");
         let mut channel = session.channel_session()?;
 
         let cmd: String = cmd.into();
         let command_result = task::spawn_blocking(move || -> Result<CommandResult> {
+            log::info!("Executing command '{}'", &cmd);
             channel.exec(cmd.as_str())?;
             let mut buffer = String::new();
             channel.read_to_string(&mut buffer)?;
+            log::trace!("Sending EOF");
             channel.send_eof()?;
+            log::trace!("Waiting for close...");
             channel.wait_close()?;
             let exit_status = channel.exit_status()?;
+            log::info!("Exit status: {exit_status}");
             Ok(CommandResult {
                 output: buffer,
                 exit_status,
@@ -70,8 +73,9 @@ impl PalworldConnection {
 
     pub async fn get_memory_info(&self) -> Result<MemInfo> {
         let bytes_regex = regex::Regex::new(r"[0-9]{1,99} kB$")?;
+        let cmd = "cat /proc/meminfo | grep -e 'Mem' -e 'Cached' -e 'Buffers'";
         let result = self
-            .command("cat /proc/meminfo | grep -e 'Mem' -e 'Cached' -e 'Buffers'")
+            .command(cmd)
             .await?;
         let mut mem_info = MemInfo::default();
         for line in result.output.split("\n") {
@@ -82,23 +86,19 @@ impl PalworldConnection {
                 Some(kb) => kb.as_str(),
                 None => continue,
             };
-            if line.contains("MemTotal:") {
-                mem_info.mem_total = kb.replace(" kB", "").parse()?;
-            }
-            if line.contains("MemFree:") {
-                mem_info.mem_free = kb.replace(" kB", "").parse()?;
-            }
-            if line.contains("MemAvailable:") {
-                mem_info.mem_available = kb.replace(" kB", "").parse()?;
-            }
-            if line.contains("Buffers:") {
-                mem_info.buffers = kb.replace(" kB", "").parse()?;
-            }
-            if line.contains("Cached:") && !line.contains("SwapCached") {
-                mem_info.cached = kb.replace(" kB", "").parse()?;
-            }
+            match &line.to_lowercase() {
+                x if x.contains("memtotal:") => {
+                    mem_info.mem_total = kb.replace(" kB", "").parse()?
+                }
+                x if x.contains("memfree:") => mem_info.mem_free = kb.replace(" kB", "").parse()?,
+                x if x.contains("memavailable:") => {
+                    mem_info.mem_available = kb.replace(" kB", "").parse()?
+                }
+                x if x.contains("buffers:") => mem_info.buffers = kb.replace(" kB", "").parse()?,
+                x if x.contains("cached:") => mem_info.cached = kb.replace(" kB", "").parse()?,
+                _ => (),
+            };
         }
-
         Ok(mem_info)
     }
 }
@@ -142,7 +142,7 @@ mod test {
         let connection = get_connection();
         let mem_info = connection.get_memory_info().await?;
         assert_ne!(mem_info, MemInfo::default());
-        
+
         println!("{mem_info:#?}");
         println!(
             "Used memory: {}MiB {}%",
@@ -150,6 +150,5 @@ mod test {
             mem_info.used_percent().unwrap()
         );
         Ok(())
-        
     }
 }
